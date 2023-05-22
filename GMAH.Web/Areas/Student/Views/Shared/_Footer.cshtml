@@ -1,0 +1,28 @@
+﻿@using GMAH.Services.Services
+@using GMAH.Models.Consts
+
+@{ 
+    var settingService = new SystemSettingService();
+}
+
+<!-- Main Footer -->
+<footer class="sticky-footer bg-white">
+    <div class="container my-auto">
+        <div class="copyright my-auto">
+            <strong>@(settingService.GetSetting(SettingEnum.FOOTER_TEXT))</strong>
+            <br />
+            <div class="pt-2">
+                <i><i class="fas fa-home"></i> @(settingService.GetSetting(SettingEnum.FOOTER_ADDRESS))</i>
+            </div>
+            <div class="row pt-2">
+                <div class="col">
+                    <i><i class="fas fa-phone"></i> @(settingService.GetSetting(SettingEnum.FOOTER_PHONE))</i>
+                </div>
+
+                <div class="col">
+                    <i><i class="fas fa-envelope"></i> @(settingService.GetSetting(SettingEnum.FOOTER_EMAIL))</i>
+                </div>
+            </div>            
+        </div>
+    </div>
+</footer>
