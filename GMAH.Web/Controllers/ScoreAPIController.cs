@@ -426,5 +426,12 @@ namespace GMAH.Web.Controllers
                 StudyFieldsNotExits = lstStudyFieldExits
             };
         }
+
+        [HttpPost]
+        [ApiAuthentication(RoleEnum.MANAGER, RoleEnum.ASSISTANT, RoleEnum.HEAD_OF_SUBJECT, RoleEnum.TEACHER)]
+        public BaseResponse FinishScore(DoneScoreRequest scoreRequest)
+        {
+            return scoreService.AddScoreToReport(scoreRequest.UserId, scoreRequest.SubjectId);
+        }
     }
 }

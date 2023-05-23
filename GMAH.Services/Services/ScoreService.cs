@@ -212,6 +212,24 @@ namespace GMAH.Services.Services
                 columns.Add(column);
             }
 
+            // nếu mà chưa nó điểm thì load data mặc đinh
+            if (!columns.Any())
+            {
+                var subject = _db.SUBJECTs.Where(x => idSubjectCanView.Contains(x.IdSubject)).ToList();
+                foreach (var s in subject)
+                {
+                    var idClassSubject = _db.CLASS_SUBJECT.Where(x => x.IdSubject == s.IdSubject).Select(x => x.IdClassSubject).FirstOrDefault();
+                    var scoreType = _db.SCORE_TYPE.Where(x => x.IdClassSubject == idClassSubject && x.ScoreWeight != null).Select(x => x.ScoreName).ToList();
+                    var scoreDefautl = new ScoreComponentViewModel()
+                    {
+                        SubjectName = s.SubjectName,
+                        Column = scoreType,
+                        ColumnId = new List<int>(),
+                    };
+                    columns.Add(scoreDefautl);
+                }
+            }
+
             // Trả về dữ liệu
             return new GetClassScoreResponse
             {
@@ -841,7 +859,8 @@ namespace GMAH.Services.Services
                     if (scoreExcel is null)
                     {
                         missingMsg += $"Học sinh có mã số <b>{studentCode}</b> thiếu cột điểm <b>{type.ScoreName}</b><br>";
-                    } else if (scoreExcel.Score < 0 || scoreExcel.Score > 10)
+                    }
+                    else if (scoreExcel.Score < 0 || scoreExcel.Score > 10)
                     {
                         missingMsg += $"Học sinh có mã số <b>{studentCode}</b> có điểm trong cột điểm <b>{type.ScoreName}</b> không hợp lệ<br>";
                     }
@@ -1024,6 +1043,43 @@ namespace GMAH.Services.Services
             catch
             {
                 // Do nothing
+            }
+        }
+
+        public BaseResponse AddScoreToReport(int userSubmitId, int subjectId)
+        {
+            // query
+            var assignTo = _db.HEAD_OF_SUBJECT.FirstOrDefault(x => x.IdSubject == subjectId)?.IdHeadOfSubject;
+
+            try
+            {
+                var report = new REPORT()
+                {
+                    ReportType = 1,
+                    ReportStatus = (int)ReportStatusEnum.WAIT_HEADER_OF_SUBJECT,
+                    ReportTitle = "Nhập điểm xong",
+                    ReportContent = "Nhập điểm xong",
+                    SubmitDate = DateTime.Now,
+                    LastUpdateDate = DateTime.Now,
+                    IdUserSubmitReport = userSubmitId, // người gửi
+                    SubmitForIdUser = (int)assignTo, // người nhận
+                };
+                _db.REPORTs.Add(report);
+                _db.SaveChanges();
+
+                return new BaseResponse
+                {
+                    IsSuccess = true,
+                    Message = "Ok"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponse
+                {
+                    IsSuccess = false,
+                    Message = "Lỗi" + ex,
+                };
             }
         }
     }

@@ -125,8 +125,7 @@ function RenderTable(result) {
     // Render header
     var header1 = `<th colspan="3" style="text-align: center;">Môn học</th>`;
     var header2 = '';
-    header2 += `<th></th><th></th><th>MSHS</th><th>Họ tên học sinh</th>`;
-
+    header2 += `<th></th><th>MSHS</th><th>Họ tên học sinh</th>`;
 
     for (let i = 0; i < result.ScoreComponent.length; i++) {
         let component = result.ScoreComponent[i];
@@ -174,13 +173,6 @@ function RenderTable(result) {
         }
 
         tempHtml += `
-            <td class="caption">
-                <button type="button"
-                  onclick="OpenSendMailModal(${studentData.IdUser})"
-                  class="btn btn-block btn-secondary btn-sm">
-                  <i class="fas fa-check"></i>
-                </button>
-            </td>
             <td class="caption">${studentData.StudentCode}</td>
             <td class="caption">${studentData.StudentName}</td>
         `;
@@ -194,7 +186,7 @@ function RenderTable(result) {
 
             for (let m = 0; m < totalComponent; m++) {
                 let scoreName = component.Column[m];
-                let idScoreType = component.ColumnId[m];
+                let idScoreType = component.ColumnId.length != 0 ? component.ColumnId[m] : null;
                 let isReadOnly = false;
                 let isOption = false;
                 let note = null;
@@ -438,4 +430,44 @@ function UpdatedScore(list) {
         let updatedScore = list[i];
         $(`input[id-user=${updatedScore.IdUser}][id-score=${updatedScore.IdScoreType}]`).css('background', 'yellow');
     }
+}
+
+function DoneEditScore(userId, subjectId) {
+    $.ajax({
+        type: "POST",
+        url: "/api/ScoreAPI/FinishScore",
+        dataType: 'json',
+        data: {
+            IdUser: idUser,
+            IdSemester: idSemester,
+            IdYear: idYear,
+            IdBehaviour: newScore,
+        },
+        headers: {
+            "Authorization": "Baerer " + _JWT_TOKEN
+        },
+        success: function (result) {
+            if (!result.IsSuccess) {
+                Toastify({
+                    text: "Có lỗi xảy ra",
+                    gravity: 'bottom',
+                    position: 'center',
+                    className: "bg-danger",
+                }).showToast();
+                return;
+            }
+
+            Toastify({
+                text: 'Nhập điểm cho học sinh xong',
+                gravity: 'bottom',
+                position: 'center',
+                className: "bg-info",
+            }).showToast();
+
+            RefreshData();
+        },
+        complete: function () {
+            optionInput.prop('disabled', false);
+        }
+    });
 }

@@ -29,6 +29,7 @@ namespace GMAH.Web.Areas.Admin.Controllers
         [JwtAuthentication(RoleEnum.MANAGER, RoleEnum.ASSISTANT, RoleEnum.TEACHER, RoleEnum.HEAD_OF_SUBJECT)]
         public ActionResult Index(int? id)
         {
+            var user = SessionHelper.GetSession<UserIdentity>("USER");
             ViewBag.IdClass = id is null ? 0 : id.Value;
 
             if (id == null)

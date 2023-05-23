@@ -72,6 +72,7 @@
     <Compile Include="ViewModels\ClassAttendanceViewModel.cs" />
     <Compile Include="ViewModels\ClassSubjectTeacherViewModel.cs" />
     <Compile Include="ViewModels\ClassViewModel.cs" />
+    <Compile Include="ViewModels\DoneSCoreRequest.cs" />
     <Compile Include="ViewModels\GetClassScoreResponse.cs" />
     <Compile Include="ViewModels\GetGradeRuleResponse.cs" />
     <Compile Include="ViewModels\GetTeacherClassBySemesterResponse.cs" />
