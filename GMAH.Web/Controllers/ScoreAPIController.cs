@@ -426,12 +426,19 @@ namespace GMAH.Web.Controllers
                 StudyFieldsNotExits = lstStudyFieldExits
             };
         }
-
+        
+        /// <summary>
+        /// gửi báo cáo
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
         [HttpPost]
         [ApiAuthentication(RoleEnum.MANAGER, RoleEnum.ASSISTANT, RoleEnum.HEAD_OF_SUBJECT, RoleEnum.TEACHER)]
-        public BaseResponse FinishScore(DoneScoreRequest scoreRequest)
+        public BaseResponse FinishScore()
         {
-            return scoreService.AddScoreToReport(scoreRequest.UserId, scoreRequest.SubjectId);
+            var userClaims = RequestContext.Principal as ClaimsPrincipal;
+            var userId = int.Parse(userClaims.FindFirst(x => x.Type == "IdUser").Value);
+            return scoreService.AddScoreToReport(userId);
         }
     }
 }

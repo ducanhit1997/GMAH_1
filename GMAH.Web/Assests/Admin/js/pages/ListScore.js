@@ -432,17 +432,10 @@ function UpdatedScore(list) {
     }
 }
 
-function DoneEditScore(userId, subjectId) {
+function DoneEditScore() {
     $.ajax({
         type: "POST",
-        url: "/api/ScoreAPI/FinishScore",
-        dataType: 'json',
-        data: {
-            IdUser: idUser,
-            IdSemester: idSemester,
-            IdYear: idYear,
-            IdBehaviour: newScore,
-        },
+        url: "/api/scoreapi/finishscore",
         headers: {
             "Authorization": "Baerer " + _JWT_TOKEN
         },
@@ -463,11 +456,9 @@ function DoneEditScore(userId, subjectId) {
                 position: 'center',
                 className: "bg-info",
             }).showToast();
-
-            RefreshData();
         },
-        complete: function () {
-            optionInput.prop('disabled', false);
+        error: function (err) {
+            console.log(err)
         }
     });
 }

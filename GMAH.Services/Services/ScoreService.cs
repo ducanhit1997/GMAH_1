@@ -4,6 +4,7 @@ using GMAH.Models.Models;
 using GMAH.Models.ViewModels;
 using GMAH.Services.Utilities;
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data.Entity;
@@ -199,13 +200,35 @@ namespace GMAH.Services.Services
 
             // Lấy view model để render column
             var columns = new List<ScoreComponentViewModel>();
-            foreach (var subject in listStudentScore.SelectMany(x => x.Subjects).Select(x => x.SubjectName).Distinct().ToList())
+            foreach (var subject in listStudentScore.SelectMany(x => x.Subjects).Distinct().ToList())
             {
+                var idClassSubject = _db.CLASS_SUBJECT.Where(x => x.IdSubject == subject.IdSubject).Select(x => x.IdClassSubject).FirstOrDefault();
+                var scoreType = _db.SCORE_TYPE.Where(x => x.IdClassSubject == idClassSubject && x.ScoreWeight != null).ToList();
+
+                var scoreNames = listStudentScore.SelectMany(x => x.Subjects)
+                                                            .Where(x => x.SubjectName.Equals(subject)).SelectMany(x => x.Details)
+                                                            .Select(x => x.ScoreName).Distinct().ToList();
+
+                var scoreIds = listStudentScore.SelectMany(x => x.Subjects)
+                                                        .Where(x => x.SubjectName.Equals(subject))
+                                                        .SelectMany(x => x.Details).Select(x => x.IdScoreType).Distinct().ToList();
+
+
+                foreach (var name in scoreType.ToList())
+                {
+                    if (scoreNames.Contains(name.ScoreName))
+                    {
+                        continue;
+                    }
+                    scoreNames.Add(name.ScoreName);
+                    scoreIds.Add(name.IdScoreType);
+                }
+
                 var column = new ScoreComponentViewModel
                 {
-                    SubjectName = subject,
-                    Column = listStudentScore.SelectMany(x => x.Subjects).Where(x => x.SubjectName.Equals(subject)).SelectMany(x => x.Details).Select(x => x.ScoreName).Distinct().ToList(),
-                    ColumnId = listStudentScore.SelectMany(x => x.Subjects).Where(x => x.SubjectName.Equals(subject)).SelectMany(x => x.Details).Select(x => x.IdScoreType).Distinct().ToList(),
+                    SubjectName = subject.SubjectName,
+                    Column = scoreNames,
+                    ColumnId = scoreIds,
                 };
 
                 if (column.Column.Count == 0) continue;
@@ -219,15 +242,19 @@ namespace GMAH.Services.Services
                 foreach (var s in subject)
                 {
                     var idClassSubject = _db.CLASS_SUBJECT.Where(x => x.IdSubject == s.IdSubject).Select(x => x.IdClassSubject).FirstOrDefault();
-                    var scoreType = _db.SCORE_TYPE.Where(x => x.IdClassSubject == idClassSubject && x.ScoreWeight != null).Select(x => x.ScoreName).ToList();
+                    var scoreType = _db.SCORE_TYPE.Where(x => x.IdClassSubject == idClassSubject && x.ScoreWeight != null).ToList();
                     var scoreDefautl = new ScoreComponentViewModel()
                     {
                         SubjectName = s.SubjectName,
-                        Column = scoreType,
-                        ColumnId = new List<int>(),
+                        Column = scoreType.Select(x => x.ScoreName).ToList(),
+                        ColumnId = scoreType.Select(x => x.IdScoreType).ToList(),
                     };
                     columns.Add(scoreDefautl);
                 }
+            }
+            else
+            {
+
             }
 
             // Trả về dữ liệu
@@ -604,7 +631,7 @@ namespace GMAH.Services.Services
 
             // Thêm hoặc sửa điểm
             var scoreSubjectDB = classDB.SCOREs.Where(x => x.IdSubject == idSubject && x.IdScoreType == scoreTypeId && x.IdSemester == idSemester).FirstOrDefault();
-            var scoreType = _db.SCORE_TYPE.Where(x => x.IdScoreType == scoreTypeId && x.CLASS_SUBJECT.IdClass == classDB.IdClass && x.CLASS_SUBJECT.IdSubject == idSubject).FirstOrDefault();
+            var scoreType = _db.SCORE_TYPE.Where(x => x.IdScoreType == scoreTypeId).FirstOrDefault();
             if (scoreType is null)
             {
                 return new BaseResponse("Không tìm thấy cột điểm mà bạn muốn chỉnh sửa");
@@ -1046,25 +1073,34 @@ namespace GMAH.Services.Services
             }
         }
 
-        public BaseResponse AddScoreToReport(int userSubmitId, int subjectId)
+        public BaseResponse AddScoreToReport(int userSubmitId)
         {
             // query
-            var assignTo = _db.HEAD_OF_SUBJECT.FirstOrDefault(x => x.IdSubject == subjectId)?.IdHeadOfSubject;
+            // get subject 
+            // check teacher
+            var teacher = _db.TEACHERs.Where(x => x.IdUser == userSubmitId).FirstOrDefault();
+            var subjectIds = _db.TEACHER_SUBJECT.Where(x => x.IdTeacher == teacher.IdTeacher)
+                                          .Select(x => x.IdSubject).ToList();
+
+            var assignTo = _db.HEAD_OF_SUBJECT.Where(x => subjectIds.Contains(x.IdSubject)).ToList();
 
             try
             {
-                var report = new REPORT()
+                foreach (var to in assignTo)
                 {
-                    ReportType = 1,
-                    ReportStatus = (int)ReportStatusEnum.WAIT_HEADER_OF_SUBJECT,
-                    ReportTitle = "Nhập điểm xong",
-                    ReportContent = "Nhập điểm xong",
-                    SubmitDate = DateTime.Now,
-                    LastUpdateDate = DateTime.Now,
-                    IdUserSubmitReport = userSubmitId, // người gửi
-                    SubmitForIdUser = (int)assignTo, // người nhận
-                };
-                _db.REPORTs.Add(report);
+                    var report = new REPORT()
+                    {
+                        ReportType = 1,
+                        ReportStatus = (int)ReportStatusEnum.WAIT_HEADER_OF_SUBJECT,
+                        ReportTitle = "Nhập điểm xong",
+                        ReportContent = "Nhập điểm xong",
+                        SubmitDate = DateTime.Now,
+                        LastUpdateDate = DateTime.Now,
+                        IdUserSubmitReport = userSubmitId, // người gửi
+                        SubmitForIdUser = to.IdHeadOfSubject, // người nhận
+                    };
+                    _db.REPORTs.Add(report);
+                }
                 _db.SaveChanges();
 
                 return new BaseResponse
